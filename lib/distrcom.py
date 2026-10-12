@@ -32,7 +32,7 @@ class SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
         if request.nodeType == distrcom_rpcs_pb2.NodeType.CONSUMER and request.HasField('assignedId'):
             print(f"Join request received from consumer {peer_listen_ip}.")
             stub = distrcom_rpcs_pb2_grpc.SRConsumerStub(grpc.aio.insecure_channel(peer_listen_ip))
-            self.consumer.consumers[request.assignedId] = stub
+            self.consumer.consumers[request.assignedId] = (stub, peer_listen_ip)
         elif request.nodeType == distrcom_rpcs_pb2.NodeType.SHARED_RESOURCE:
             print(f"Join request received from SR {peer_listen_ip}.")
             stub = distrcom_rpcs_pb2_grpc.SharedResourceStub(grpc.aio.insecure_channel(peer_listen_ip))
@@ -99,8 +99,11 @@ class SRConsumer:
             )
 
             self.consumers = {
-                consumer_id: distrcom_rpcs_pb2_grpc.SRConsumerStub(
-                    grpc.aio.insecure_channel(consumer_host)
+                consumer_id: (
+                    distrcom_rpcs_pb2_grpc.SRConsumerStub(
+                        grpc.aio.insecure_channel(consumer_host)
+                    ),
+                    consumer_host
                 ) for consumer_host, consumer_id in join_response.consumers.items()
             }
 
@@ -116,14 +119,14 @@ class SRConsumer:
                     listeningPort=self.port,
                     nodeType=distrcom_rpcs_pb2.CONSUMER,
                     assignedId=join_response.assignedId)
-            ) for _, stub in self.consumers.items()])
+            ) for stub, _ in self.consumers.values()])
 
             if not all([res.OK for res in join_responses]):
                 raise Exception("Join failed, response not OK")
 
             print(f'Join approved by all {len(join_responses)} consumers.')
-            print(f'Current Consumers: {self.consumers.keys()}')
-            print(f'Current shared resources: {self.sharedResources.keys()}')
+            print(f'Current Consumers: {[v[1] for v in self.consumers.values()]}')
+            print(f'Current shared resources: {list(self.sharedResources.keys())}')
 
             await server.wait_for_termination()
 
@@ -144,10 +147,6 @@ class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
         self.provider = provider
 
     async def Join(self, request, context):
-        peer = context.peer()
-        if peer.startswith('ipv6'):
-            raise Exception('ipv6 unhandled')
-
         peer_listen_ip = f'{peer_ipv4(context)}:{request.listeningPort}'
 
         consumers_exclusive = self.provider.consumers.copy()
@@ -157,11 +156,11 @@ class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
             self.provider.sharedResources.append(peer_listen_ip)
         elif request.nodeType == distrcom_rpcs_pb2.CONSUMER:
             print(f"Join request received from consumer {peer_listen_ip}")
-            self.provider.currentNodeId += 1
-            self.provider.consumers[peer_listen_ip] = self.provider.currentNodeId
+            self.provider.nodeIdCounter += 1
+            self.provider.consumers[peer_listen_ip] = self.provider.nodeIdCounter
 
         return distrcom_rpcs_pb2.NetworkJoinResponse(
-            assignedId=self.provider.currentNodeId,
+            assignedId=self.provider.nodeIdCounter,
             consumers=consumers_exclusive,
             shared_resources=self.provider.sharedResources
         )
@@ -195,9 +194,9 @@ class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
             return distrcom_rpcs_pb2.SROperationReturn(OK=False)
 
         if request.HasField('args'):
-            operation_return = self.provider.operationCallbacks[request.operation](self.provider.SRData, request.args)
+            operation_return = self.provider.operationCallbacks[request.operation](self.provider.srData, request.args)
         else:
-            operation_return = self.provider.operationCallbacks[request.operation](self.provider.SRData)
+            operation_return = self.provider.operationCallbacks[request.operation](self.provider.srData)
 
         if operation_return is None:
             return distrcom_rpcs_pb2.SROperationReturn(OK=True)
@@ -219,18 +218,17 @@ async def host_available(address, timeout=ROOT_DISCOVERY_TIMEOUT):
         return False
 
 class SharedResourceProvider:
-    SRData = None
-
-    # will be the ID of the node currently owning/locking the SR
+    # Will be the ID of the node currently owning/locking the SR
     currentOwner = None
-
-    operationCallbacks = dict()
-
     consumers = dict()
     sharedResources = list()
 
+    srData = None
+    operationCallbacks = dict()
+    nodeIdCounter = 0
+
     def __init__(self, initial_sr_data):
-        self.SRData = initial_sr_data
+        self.srData = initial_sr_data
 
     def Start(self, port = SERVER_PORT):
         async def serve():

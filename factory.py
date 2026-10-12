@@ -2,7 +2,7 @@ import sys
 import time
 import random
 import threading
-from distrcom_lib import *
+from lib.distrcom import *
 
 PORT = int(sys.argv[1])
 SR_IP = sys.argv[2]

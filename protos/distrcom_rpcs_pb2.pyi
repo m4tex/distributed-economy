@@ -56,12 +56,14 @@ class NetworkJoinResponse(_message.Message):
     def __init__(self, assignedId: _Optional[int] = ..., consumers: _Optional[_Mapping[str, int]] = ..., shared_resources: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class ResourceRequest(_message.Message):
-    __slots__ = ("resourceNode", "timestamp")
+    __slots__ = ("nodeId", "resourceNode", "timestamp")
+    NODEID_FIELD_NUMBER: _ClassVar[int]
     RESOURCENODE_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
+    nodeId: int
     resourceNode: int
     timestamp: int
-    def __init__(self, resourceNode: _Optional[int] = ..., timestamp: _Optional[int] = ...) -> None: ...
+    def __init__(self, nodeId: _Optional[int] = ..., resourceNode: _Optional[int] = ..., timestamp: _Optional[int] = ...) -> None: ...
 
 class BooleanResponse(_message.Message):
     __slots__ = ("OK",)
@@ -76,15 +78,19 @@ class ResourceRequestReply(_message.Message):
     def __init__(self, response: _Optional[_Union[ResourceResponse, str]] = ...) -> None: ...
 
 class SROperation(_message.Message):
-    __slots__ = ("operation", "args")
+    __slots__ = ("nodeId", "operation", "args")
+    NODEID_FIELD_NUMBER: _ClassVar[int]
     OPERATION_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
+    nodeId: int
     operation: str
     args: bytes
-    def __init__(self, operation: _Optional[str] = ..., args: _Optional[bytes] = ...) -> None: ...
+    def __init__(self, nodeId: _Optional[int] = ..., operation: _Optional[str] = ..., args: _Optional[bytes] = ...) -> None: ...
 
 class SROperationReturn(_message.Message):
-    __slots__ = ("data",)
+    __slots__ = ("OK", "data")
+    OK_FIELD_NUMBER: _ClassVar[int]
     DATA_FIELD_NUMBER: _ClassVar[int]
+    OK: bool
     data: bytes
-    def __init__(self, data: _Optional[bytes] = ...) -> None: ...
+    def __init__(self, OK: _Optional[bool] = ..., data: _Optional[bytes] = ...) -> None: ...

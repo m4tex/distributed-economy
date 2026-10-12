@@ -1,5 +1,5 @@
 import sys
-from distrcom_lib import *
+from lib.distrcom import *
 
 PORT = int(sys.argv[1]) if len(sys.argv)>1 else 8000
 
@@ -33,7 +33,6 @@ provider = SharedResourceProvider(initial_data)
 provider.AddResourceOperation('produce', produce)
 provider.AddResourceOperation('consume', consume)
 provider.Start(PORT)
-
 
 while True:
     pass
