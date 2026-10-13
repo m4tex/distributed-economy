@@ -4,8 +4,8 @@ import "google/protobuf/empty.proto";
 
 service SRConsumer {
   rpc RequestResource(ResourceRequest) returns (ResourceRequestReply);
-  rpc RespondDeferred(BooleanResponse) returns (google.protobuf.Empty);
-  rpc Join(NetworkJoinRequest) returns (BooleanResponse);
+  rpc RespondDeferred(Timestamp) returns (google.protobuf.Empty);
+  rpc Join(NetworkJoinRequest) returns (Timestamp);
 }
 
 service SharedResource {
@@ -39,8 +39,12 @@ message NetworkJoinResponse {
 
 message ResourceRequest {
   uint32 nodeId = 1;
-  uint32 resourceNode = 2;
+  string srAddress = 2;
   uint32 timestamp = 3;
+}
+
+message Timestamp {
+  uint32 time = 1;
 }
 
 message BooleanResponse {
@@ -53,7 +57,9 @@ enum ResourceResponse {
 }
 
 message ResourceRequestReply {
-  ResourceResponse response = 1;
+  uint32 nodeId = 1;
+  ResourceResponse response = 2;
+  uint32 timestamp = 3;
 }
 
 message SROperation {

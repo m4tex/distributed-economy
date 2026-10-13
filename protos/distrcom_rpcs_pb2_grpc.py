@@ -42,13 +42,13 @@ class SRConsumerStub:
                 _registered_method=True)
         self.RespondDeferred = channel.unary_unary(
                 '/SRConsumer/RespondDeferred',
-                request_serializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.SerializeToString,
+                request_serializer=protos_dot_distrcom__rpcs__pb2.Timestamp.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
         self.Join = channel.unary_unary(
                 '/SRConsumer/Join',
                 request_serializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.SerializeToString,
-                response_deserializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
+                response_deserializer=protos_dot_distrcom__rpcs__pb2.Timestamp.FromString,
                 _registered_method=True)
 
 
@@ -83,13 +83,13 @@ def add_SRConsumerServicer_to_server(servicer, server):
             ),
             'RespondDeferred': grpc.unary_unary_rpc_method_handler(
                     servicer.RespondDeferred,
-                    request_deserializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
+                    request_deserializer=protos_dot_distrcom__rpcs__pb2.Timestamp.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'Join': grpc.unary_unary_rpc_method_handler(
                     servicer.Join,
                     request_deserializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.FromString,
-                    response_serializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.SerializeToString,
+                    response_serializer=protos_dot_distrcom__rpcs__pb2.Timestamp.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -144,7 +144,7 @@ class SRConsumer:
             request,
             target,
             '/SRConsumer/RespondDeferred',
-            protos_dot_distrcom__rpcs__pb2.BooleanResponse.SerializeToString,
+            protos_dot_distrcom__rpcs__pb2.Timestamp.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
@@ -172,7 +172,7 @@ class SRConsumer:
             target,
             '/SRConsumer/Join',
             protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.SerializeToString,
-            protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
+            protos_dot_distrcom__rpcs__pb2.Timestamp.FromString,
             options,
             channel_credentials,
             insecure,

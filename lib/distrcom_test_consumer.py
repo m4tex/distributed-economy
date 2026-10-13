@@ -7,8 +7,15 @@ SR_PORT = int(sys.argv[3]) if len(sys.argv) > 3 else 8000
 
 SR_ADDR = f'{SR_IP}:{SR_PORT}'
 
+def resource_granted():
+    print('Resource Granted')
+
 consumer = SRConsumer(PORT)
-consumer.Start(SR_ADDR)
+consumer.Start(
+    SR_ADDR,
+    lambda:
+        consumer.Request(consumer.sharedResources[0], resource_granted)
+)
 
 while True:
     pass
