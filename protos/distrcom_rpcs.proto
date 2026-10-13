@@ -4,7 +4,7 @@ import "google/protobuf/empty.proto";
 
 service SRConsumer {
   rpc RequestResource(ResourceRequest) returns (ResourceRequestReply);
-  rpc RespondDeferred(Timestamp) returns (google.protobuf.Empty);
+  rpc RespondDeferred(ResourceRequestReply) returns (google.protobuf.Empty);
   rpc Join(NetworkJoinRequest) returns (Timestamp);
 }
 

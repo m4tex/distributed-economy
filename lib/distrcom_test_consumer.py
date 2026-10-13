@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from lib.distrcom import *
 
@@ -7,14 +8,15 @@ SR_PORT = int(sys.argv[3]) if len(sys.argv) > 3 else 8000
 
 SR_ADDR = f'{SR_IP}:{SR_PORT}'
 
-def resource_granted():
-    print('Resource Granted')
+async def cb_on_joined():
+    await consumer.request(list(consumer.sharedResources.keys())[0])
+    await asyncio.sleep(1)
+    await consumer.free()
 
 consumer = SharedResourceConsumer(PORT)
 consumer.start(
     SR_ADDR,
-    lambda:
-        consumer.request(consumer.sharedResources[0], resource_granted)
+    cb_on_joined
 )
 
 while True:

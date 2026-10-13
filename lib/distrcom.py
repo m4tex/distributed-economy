@@ -22,6 +22,13 @@ LIVENESS_TIMEOUT = 1
 
 server = None
 
+# Turns AIO rpc calls into tasks
+def rpc_task(call):
+    async def runner():
+        return await call
+
+    return asyncio.create_task(runner())
+
 def peer_ipv4(context):
     peer = context.peer()
     if peer.startswith('ipv6'):
@@ -37,21 +44,25 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
     async def Join(self, request, context):
         peer_listen_ip = f'{peer_ipv4(context)}:{request.listeningPort}'
 
+        self.consumer.time += 1
+
         if request.nodeType == distrcom_rpcs_pb2.NodeType.CONSUMER and request.HasField('assignedId'):
-            print(f"Join request received from consumer {peer_listen_ip}.")
+            print(f"[{self.consumer.time}] Join request received from consumer {peer_listen_ip}.")
             stub = distrcom_rpcs_pb2_grpc.SRConsumerStub(grpc.aio.insecure_channel(peer_listen_ip))
             self.consumer.consumers[request.assignedId] = (stub, peer_listen_ip)
         elif request.nodeType == distrcom_rpcs_pb2.NodeType.SHARED_RESOURCE:
-            print(f"Join request received from SR {peer_listen_ip}.")
+            print(f"[{self.consumer.time}] Join request received from SR {peer_listen_ip}.")
             stub = distrcom_rpcs_pb2_grpc.SharedResourceStub(grpc.aio.insecure_channel(peer_listen_ip))
             self.consumer.sharedResources[peer_listen_ip] = stub
 
-        self.consumer.time += 1
         return distrcom_rpcs_pb2.Timestamp(time=self.consumer.time)
 
     async def RespondDeferred(self, request, context):
         if request.nodeId not in self.consumer.awaiting_responses:
             raise Exception('Received unknown deferred response')
+
+        if request.response == distrcom_rpcs_pb2.DEFERRED:
+            raise Exception('Deferred response further deferred')
 
         print(f'Received deferred response from {request.nodeId}.')
 
@@ -60,13 +71,15 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
         self.consumer.awaiting_responses.remove(request.nodeId)
 
         if len(self.consumer.awaiting_responses) == 0:
-            self.consumer.request_callback()
+            self.consumer.sr_access_event.set()
 
         return empty_pb2.Empty()
 
-    async def Request(self, request, context):
+    async def RequestResource(self, request, context):
         # Local request, if the node is waiting on grants for a resource this is populated with (sr_address, timestamp)
         lr = self.consumer.ongoing_request
+
+        self.consumer.time = int(max(self.consumer.time, request.timestamp)) + 1
 
         # First checks if the received request regards an SR that the local node also wants to access
         if lr is not None and lr[0] == request.srAddress:
@@ -77,13 +90,17 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
 
             if local_timestamp_comes_first_condition or local_id_comes_first_condition:
                 # Place the received request in the deferred queue
-                self.consumer.deferred_responses.append((request.nodeId, request.timestamp))
+                self.consumer.deferred_responses.append(request.nodeId)
 
-                print(f'Received a conflicting request from {request.nodeId}, though I came first. Deferred.')
+                print(f'[{self.consumer.time+1}] Received a conflicting request (node {request.nodeId}, [{request.timestamp}]), though I came first. Deferred.')
 
-                return distrcom_rpcs_pb2.ResourceRequestReply(nodeId=self.consumer.nodeId, response=distrcom_rpcs_pb2.DEFERRED)
+                return distrcom_rpcs_pb2.ResourceRequestReply(
+                    nodeId=self.consumer.nodeId,
+                    response=distrcom_rpcs_pb2.DEFERRED,
+                    timestamp=self.consumer.time
+                )
 
-        self.consumer.time = int(max(self.consumer.time, request.timestamp)) + 1
+        print(f'[{self.consumer.time+1}] Received a request (node {request.nodeId}, [{request.timestamp}]). Sending OK.')
 
         return distrcom_rpcs_pb2.ResourceRequestReply(nodeId=self.consumer.nodeId, response=distrcom_rpcs_pb2.OK)
 
@@ -93,7 +110,7 @@ class SharedResourceConsumer:
         self.nodeId = -1
         # Lamport's clock time variable
         self.time = 0
-        # Stores all connections, full ip string the key, (grpc stub, node id) the value
+        # Stores all connections, node id the key, (grpc stub, listen address) the value
         self.consumers = dict()
         # Active SR nodes
         self.sharedResources = dict()
@@ -107,7 +124,7 @@ class SharedResourceConsumer:
         # Responses to be sent once the conflict is resolved, FIFO
         self.deferred_responses = list()
 
-        self.request_callback = None
+        self.sr_access_event = asyncio.Event()
 
     # Initializes the SR consumer. Runs cb_on_joined once successful.
     # Non-blocking, starts a listening server on a separate thread.
@@ -127,7 +144,7 @@ class SharedResourceConsumer:
 
             server.add_insecure_port('0.0.0.0:{}'.format(self.port))
             await server.start()
-            print('SRConsumer started.')
+            print(f'[{self.time}] SRConsumer started.')
 
             temp_stub = distrcom_rpcs_pb2_grpc.SharedResourceStub(
                 grpc.aio.insecure_channel(root_host)
@@ -166,14 +183,14 @@ class SharedResourceConsumer:
             ) for stub, _ in self.consumers.values()])
 
             # Sync time
-            self.time = max([r.time for r in join_responses]) + 1
+            self.time = max([r.time for r in join_responses], default=0) + 1
             self.nodeId = join_response.assignedId
 
-            print(f'Join approved by all {len(join_responses)} consumers.')
+            print(f'[{self.time}] Join approved by all {len(join_responses)} consumers.')
             print(f'Current Consumers: {[v[1] for v in self.consumers.values()]}')
             print(f'Current shared resources: {list(self.sharedResources.keys())}')
 
-            cb_on_joined(self)
+            await cb_on_joined()
             await server.wait_for_termination()
 
         threading.Thread(target=lambda: asyncio.run(serve()), daemon=True).start()
@@ -184,55 +201,62 @@ class SharedResourceConsumer:
 
     # TODO: wrap callback in lock, free
     # Sends a request to the network, then calls the callback once access has been granted
-    def request(self, sr_addr, callback):
-        print(f'Sending a request for {sr_addr}')
-
+    async def request(self, sr_addr):
         self.time += 1 # We send a request, therefore step time forward
+
         self.ongoing_request = (sr_addr, self.time)
 
-        request_payload = distrcom_rpcs_pb2.ResourceRequest(nodeId=self.nodeId, srAddress=sr_addr, timestamp=self.time)
-        tasks = [asyncio.create_task(stub.request(request_payload)) for stub, _ in self.consumers.values()]
+        if len(self.consumers) == 0:
+            print(f'[{self.time}] No one to send a request to. Access granted by default.')
+            await self.acquire()
+            self.time += 1
+            return
 
-        done, pending = asyncio.run(asyncio.wait(
+        print(f'[{self.time}] Sending a request for {sr_addr}')
+        request_payload = distrcom_rpcs_pb2.ResourceRequest(nodeId=self.nodeId, srAddress=sr_addr, timestamp=self.time)
+        tasks = [
+            rpc_task(stub.RequestResource(request_payload))
+            for stub, _ in self.consumers.values()
+        ]
+
+        done, pending = await asyncio.wait(
             tasks,
             timeout=LIVENESS_TIMEOUT
-        ))
+        )
 
         if len(pending) > 0:
             pass # TODO: Handle stale nodes
 
-        self.request_callback = partial(self.__run_with_lock, callback)
-
         responses = [r.result() for r in done]
 
         # We receive responses, sync clock and increment
-        self.time = int(max([r.timestamp for r in responses])) + 1
+        self.time = max((self.time, *(r.timestamp for r in responses))) + 1
 
         # Save up the deferred responses
-        for deferred in [r for r in responses if r.response == distrcom_rpcs_pb2.DEFERRED]:
-            self.awaiting_responses.append(deferred.nodeId)
+        deferred = [r for r in responses if r.response == distrcom_rpcs_pb2.DEFERRED]
+        for d in deferred :
+            self.awaiting_responses.append(d.nodeId)
 
-        # If there are no conflicts, and we get only grants we can continue
-        if len(self.awaiting_responses) == 0:
-            if callback is None:
-                raise Exception("No request callback defined")
+        print(f'[{self.time}] Got deferred by: {[d.nodeId for d in deferred]}')
 
-            self.request_callback()
+        # If there are conflicts, await access
+        if len(self.awaiting_responses) > 0:
+            await self.sr_access_event.wait()
+
+        await self.acquire()
 
     # Wraps the consumer's critical section code in mutex-like lock and unlock for extra protection
-    def __run_with_lock(self, func):
+    async def acquire(self):
         if self.ongoing_request is None:
             raise Exception("Freeing without ongoing request")
 
         sr_stub = self.sharedResources[self.ongoing_request[0]]
 
-        node_id = distrcom_rpcs_pb2.NodeId(id=self.nodeId)
-
         try:
-            acq_response = asyncio.run(asyncio.wait_for(
-                sr_stub.Acquire(node_id),
+            acq_response = await asyncio.wait_for(
+                sr_stub.Acquire(distrcom_rpcs_pb2.NodeId(id=self.nodeId)),
                 timeout=LIVENESS_TIMEOUT
-            ))
+            )
         except asyncio.TimeoutError:
             # TODO: handle timeout (prolly retry or shutdown)
             raise Exception("SR acquire timed out")
@@ -241,15 +265,19 @@ class SharedResourceConsumer:
             # This means the SR is currently taken
             raise Exception("SR acquire failed")
 
-        print('Access granted, SR acquired.')
+        print(f'[{self.time}] Access granted, SR acquired.')
 
-        func()
+    async def free(self):
+        if self.ongoing_request is None:
+            raise Exception("Freeing without ongoing request")
+
+        sr_stub = self.sharedResources[self.ongoing_request[0]]
 
         try:
-            free_response = asyncio.run(asyncio.wait_for(
-                sr_stub.Free(node_id),
+            free_response = await asyncio.wait_for(
+                sr_stub.Free(distrcom_rpcs_pb2.NodeId(id=self.nodeId)),
                 timeout=LIVENESS_TIMEOUT
-            ))
+            )
         except asyncio.TimeoutError:
             # TODO: handle timeout (prolly retry or shutdown)
             raise Exception("SR Free timed out")
@@ -261,18 +289,28 @@ class SharedResourceConsumer:
         self.ongoing_request = None
         self.time += 1
 
-        tasks = [ asyncio.create_task(
-            self.consumers[c[0]].RespondDeferred(distrcom_rpcs_pb2.Timestamp(time=self.time))
-        ) for c in self.deferred_responses ]
+        if len(self.deferred_responses) == 0:
+            print(f"Done with SR. Freed.")
+            return
 
-        done, pending = asyncio.run(
-            asyncio.wait(tasks, timeout=LIVENESS_TIMEOUT)
-        )
+        tasks = [
+            rpc_task(self.consumers[c][0].RespondDeferred(distrcom_rpcs_pb2.ResourceRequestReply(
+                nodeId=self.nodeId,
+                response=distrcom_rpcs_pb2.ResourceResponse.OK,
+                timestamp=self.time
+            )))
+            for c in self.deferred_responses
+        ]
 
-        print(f'Done with SR. Sent deferred to: {[d[0] for d in self.deferred_responses]}')
+        done, pending = await asyncio.wait(tasks, timeout=LIVENESS_TIMEOUT)
+
+        print(f'[{self.time}] Done with SR. Sent deferred to: {self.deferred_responses}')
 
         if len(pending) > 0:
             pass # TODO: handle stale nodes
+
+    async def operation(self):
+        pass
 
 # TODO: add lock timeout
 class _SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
@@ -325,7 +363,7 @@ class _SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
 
     async def ResourceOperation(self, request, context):
         if (request.nodeId != self.provider.currentOwner
-                or not self.provider.operationCallbacks.has_key(request.operation)):
+                or request.operation not in self.provider.operationCallbacks):
             return distrcom_rpcs_pb2.SROperationReturn(OK=False)
 
         print(f'({request.nodeId}): Executing {request.operation}.')

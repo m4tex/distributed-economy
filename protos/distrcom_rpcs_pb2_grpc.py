@@ -42,7 +42,7 @@ class SRConsumerStub:
                 _registered_method=True)
         self.RespondDeferred = channel.unary_unary(
                 '/SRConsumer/RespondDeferred',
-                request_serializer=protos_dot_distrcom__rpcs__pb2.Timestamp.SerializeToString,
+                request_serializer=protos_dot_distrcom__rpcs__pb2.ResourceRequestReply.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
         self.Join = channel.unary_unary(
@@ -83,7 +83,7 @@ def add_SRConsumerServicer_to_server(servicer, server):
             ),
             'RespondDeferred': grpc.unary_unary_rpc_method_handler(
                     servicer.RespondDeferred,
-                    request_deserializer=protos_dot_distrcom__rpcs__pb2.Timestamp.FromString,
+                    request_deserializer=protos_dot_distrcom__rpcs__pb2.ResourceRequestReply.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'Join': grpc.unary_unary_rpc_method_handler(
@@ -144,7 +144,7 @@ class SRConsumer:
             request,
             target,
             '/SRConsumer/RespondDeferred',
-            protos_dot_distrcom__rpcs__pb2.Timestamp.SerializeToString,
+            protos_dot_distrcom__rpcs__pb2.ResourceRequestReply.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
