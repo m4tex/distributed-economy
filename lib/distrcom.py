@@ -113,6 +113,16 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
 
         return distrcom_rpcs_pb2.ResourceRequestReply(nodeId=self.consumer.nodeId, response=distrcom_rpcs_pb2.OK)
 
+class NetworkInterceptor(grpc.aio.ServerInterceptor):
+    def __init__(self, consumer):
+        self.consumer = consumer
+
+    async def intercept_service(self, continuation, handler_call_details):
+        if handler_call_details.method != '/SRConsumer/Join':
+            await self.consumer.ready.wait()
+
+        return await continuation(handler_call_details)
+
 class SharedResourceConsumer:
     def __init__(self, port):
         self.port = port
@@ -133,6 +143,7 @@ class SharedResourceConsumer:
         # Responses to be sent once the conflict is resolved, FIFO
         self.deferred_responses = list()
 
+        self.ready = asyncio.Event()
         self.sr_access_event = asyncio.Event()
 
     # Initializes the SR consumer. Runs cb_on_joined once successful.
@@ -144,7 +155,7 @@ class SharedResourceConsumer:
             if server is not None:
                 raise Exception("Start called twice")
 
-            server = grpc.aio.server()
+            server = grpc.aio.server(interceptors=[NetworkInterceptor(self)])
 
             distrcom_rpcs_pb2_grpc.add_SRConsumerServicer_to_server(
                 _SRConsumerHandler(self),
@@ -199,6 +210,7 @@ class SharedResourceConsumer:
             print(f'Current Consumers: {[v[1] for v in self.consumers.values()]}')
             print(f'Current shared resources: {list(self.sharedResources.keys())}')
 
+            self.ready.set()
             await cb_on_joined()
             await server.wait_for_termination()
 
@@ -255,7 +267,7 @@ class SharedResourceConsumer:
     # Wraps the consumer's critical section code in mutex-like lock and unlock for extra protection
     async def acquire(self):
         if self.ongoing_request is None:
-            raise Exception("Freeing without ongoing request")
+            raise Exception("Acquiring without ongoing request")
 
         sr_stub = self.sharedResources[self.ongoing_request[0]]
 
@@ -280,6 +292,9 @@ class SharedResourceConsumer:
 
         sr_stub = self.sharedResources[self.ongoing_request[0]]
 
+        self.ongoing_request = None
+        self.sr_access_event.clear()
+
         try:
             free_response = await asyncio.wait_for(
                 sr_stub.Free(distrcom_rpcs_pb2.NodeId(id=self.nodeId)),
@@ -292,8 +307,6 @@ class SharedResourceConsumer:
         if not free_response.OK:
             # This means the SR has a different owner
             raise Exception("SR Free failed")
-
-        self.ongoing_request = None
 
         # We send deferred responses
         self.time += 1
@@ -318,8 +331,47 @@ class SharedResourceConsumer:
         if len(pending) > 0:
             pass # TODO: handle stale nodes
 
-    async def operation(self):
-        pass
+        self.deferred_responses.clear()
+
+    # Executes an operation on the SR
+    async def operation(self, op_string, args=None):
+        if self.ongoing_request is None:
+            raise Exception("Operation without ongoing request")
+
+        sr_stub = self.sharedResources[self.ongoing_request[0]]
+        self.time += 1
+
+        print(f'[{self.time}] Executing {op_string} on {self.ongoing_request[0]}.')
+
+        payload = distrcom_rpcs_pb2.SROperation(
+                    nodeId=self.nodeId,
+                    operation=op_string
+                ) if args is None \
+            else distrcom_rpcs_pb2.SROperation(
+                    nodeId=self.nodeId,
+                    operation=op_string,
+                    args=args
+                )
+
+        try:
+            op_response = await asyncio.wait_for(
+                sr_stub.ResourceOperation(payload),
+                timeout=LIVENESS_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            # TODO: handle timeout (prolly retry or shutdown)
+            raise Exception("SR Free timed out")
+
+        if not op_response.OK:
+            # This means the SR has a different owner
+            raise Exception("SR Free failed")
+
+        if op_response.HasField('data'):
+            return op_response.data
+
+        print('Operation successful.')
+        return None
+
 
 # TODO: add lock timeout
 class _SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
