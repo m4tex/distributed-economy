@@ -55,6 +55,9 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
             stub = distrcom_rpcs_pb2_grpc.SharedResourceStub(grpc.aio.insecure_channel(peer_listen_ip))
             self.consumer.sharedResources[peer_listen_ip] = stub
 
+        self.consumer.time += 1
+        print(f'[{self.consumer.time}] Approving join.')
+
         return distrcom_rpcs_pb2.Timestamp(time=self.consumer.time)
 
     async def RespondDeferred(self, request, context):
@@ -64,9 +67,9 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
         if request.response == distrcom_rpcs_pb2.DEFERRED:
             raise Exception('Deferred response further deferred')
 
-        print(f'Received deferred response from {request.nodeId}.')
-
         self.consumer.time = int(max(self.consumer.time, request.timestamp)) + 1
+
+        print(f'[{self.consumer.time}] Received deferred response from {request.nodeId}.')
 
         self.consumer.awaiting_responses.remove(request.nodeId)
 
@@ -81,6 +84,8 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
 
         self.consumer.time = int(max(self.consumer.time, request.timestamp)) + 1
 
+        print(f'[{self.consumer.time}] Received a request (node {request.nodeId}, [{request.timestamp}]).')
+
         # First checks if the received request regards an SR that the local node also wants to access
         if lr is not None and lr[0] == request.srAddress:
             # If the local request comes before the received one time-wise
@@ -92,7 +97,9 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
                 # Place the received request in the deferred queue
                 self.consumer.deferred_responses.append(request.nodeId)
 
-                print(f'[{self.consumer.time+1}] Received a conflicting request (node {request.nodeId}, [{request.timestamp}]), though I came first. Deferred.')
+                self.consumer.time += 1
+
+                print(f'[{self.consumer.time}] Request conflicting, I came first. Deferred.')
 
                 return distrcom_rpcs_pb2.ResourceRequestReply(
                     nodeId=self.consumer.nodeId,
@@ -100,7 +107,9 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
                     timestamp=self.consumer.time
                 )
 
-        print(f'[{self.consumer.time+1}] Received a request (node {request.nodeId}, [{request.timestamp}]). Sending OK.')
+        self.consumer.time += 1
+
+        print(f'[{self.consumer.time}] Sending OK.')
 
         return distrcom_rpcs_pb2.ResourceRequestReply(nodeId=self.consumer.nodeId, response=distrcom_rpcs_pb2.OK)
 
@@ -202,16 +211,15 @@ class SharedResourceConsumer:
     # TODO: wrap callback in lock, free
     # Sends a request to the network, then calls the callback once access has been granted
     async def request(self, sr_addr):
-        self.time += 1 # We send a request, therefore step time forward
-
         self.ongoing_request = (sr_addr, self.time)
 
         if len(self.consumers) == 0:
             print(f'[{self.time}] No one to send a request to. Access granted by default.')
             await self.acquire()
-            self.time += 1
+            # self.time += 1
             return
 
+        self.time += 1 # We send a request, therefore step time forward
         print(f'[{self.time}] Sending a request for {sr_addr}')
         request_payload = distrcom_rpcs_pb2.ResourceRequest(nodeId=self.nodeId, srAddress=sr_addr, timestamp=self.time)
         tasks = [
@@ -237,10 +245,9 @@ class SharedResourceConsumer:
         for d in deferred :
             self.awaiting_responses.append(d.nodeId)
 
-        print(f'[{self.time}] Got deferred by: {[d.nodeId for d in deferred]}')
-
         # If there are conflicts, await access
         if len(self.awaiting_responses) > 0:
+            print(f'[{self.time}] Got deferred by: {[d.nodeId for d in deferred]}')
             await self.sr_access_event.wait()
 
         await self.acquire()
@@ -287,6 +294,8 @@ class SharedResourceConsumer:
             raise Exception("SR Free failed")
 
         self.ongoing_request = None
+
+        # We send deferred responses
         self.time += 1
 
         if len(self.deferred_responses) == 0:
