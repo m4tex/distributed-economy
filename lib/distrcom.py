@@ -48,6 +48,10 @@ class SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
 
     async def Request(self, resource, host):
         print("Request received")
+        
+    async def RequestResource(self, request, context):
+        print("Request received")
+        return distrcom_rpcs_pb2.ResourceRequestReply(response=distrcom_rpcs_pb2.ResourceResponse.OK)
 
 
 class SRConsumer:
@@ -68,6 +72,9 @@ class SRConsumer:
 
         # Responses to be sent once the conflict is resolved, FIFO
         self.deferred_responses = list()
+        
+        # Saves the node's assigned id
+        self.nodeID = -1
 
     def Start(self, root_host):
         async def serve():
@@ -97,6 +104,11 @@ class SRConsumer:
                     nodeType=distrcom_rpcs_pb2.CONSUMER
                 )
             )
+            
+            #############################################
+            self.nodeID = join_response.assignedId
+            print("Your assigned nodeID is",self.nodeID)
+            #############################################
 
             self.consumers = {
                 consumer_id: (
@@ -189,8 +201,13 @@ class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
         return distrcom_rpcs_pb2.ResourceRequestReply()
 
     async def ResourceOperation(self, request, context):
+        ########
+        print(self.provider.operationCallbacks)
+        ########
+        #if (request.nodeId != self.provider.currentOwner
+        #        or not self.provider.operationCallbacks.has_key(request.operation)): # has_key error py 3.0?
         if (request.nodeId != self.provider.currentOwner
-                or not self.provider.operationCallbacks.has_key(request.operation)):
+                or not request.operation in self.provider.operationCallbacks):
             return distrcom_rpcs_pb2.SROperationReturn(OK=False)
 
         if request.HasField('args'):
