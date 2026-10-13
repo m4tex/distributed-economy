@@ -1,7 +1,7 @@
 import sys
 import time
 import random
-#import threading
+import threading
 from lib.distrcom import *
 import json
 import asyncio
@@ -15,12 +15,32 @@ CONSUME_AMOUNT = 50
 MIN_WAIT = 1.0
 MAX_WAIT = 5.0
 
-wait = random.uniform(MIN_WAIT, MAX_WAIT) # set interval randomly
+fail_check_interval = 30.0
+fail_chance = 0.5
+critical_fail_chance = 0.02
+
+wait = int(sys.argv[4]) if len(sys.argv) > 3 else random.uniform(MIN_WAIT, MAX_WAIT)  # set interval randomly
 
 async def factory_loop():
+    last_fail_check = time.time()
     while True:
         # 1. Begär access till SR
         #print(f"[F{ PORT }] Requesting SR access...")
+        
+        # scenario 1: failure check every 30s
+        now = time.time()
+        if now - last_fail_check > fail_check_interval:
+            last_fail_check = now
+            if random.random() > fail_chance: # 50% chans for failure
+                
+                if random.random() < critical_fail_chance: # liten chans för fail-stop
+                    print(" INITIATED FAIL-STOP (permanent)")
+                    quit()
+                else:
+                    print(" INITIATED FAIL-STOP-RETURN")
+                    time.sleep(5)
+        
+        # 1. Begär access till SR
         await factory.request(list(factory.sharedResources.keys())[0])
 
         # 2. När access beviljas (callback från libben), kör consume
@@ -38,13 +58,12 @@ async def factory_loop():
         await asyncio.sleep(wait)
 
 #threading.Thread(target=factory_loop, daemon=True).start()
-try:
-    factory = SharedResourceConsumer(PORT)
-    factory.start(SR_ADDR, factory_loop)
-except OSERROR:
-    print('meh')
-except RuntimeError:
-    print('deh')
+factory = SharedResourceConsumer(PORT)
+factory.start(SR_ADDR, factory_loop)
 
-while True:
-    pass
+#threading.Event().wait()
+try:
+    while True:
+        time.sleep(3600) # lower cpu usaeg
+except KeyboardInterrupt:
+    print("Manual shutdown...")
