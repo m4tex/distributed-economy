@@ -6,6 +6,7 @@ service SRConsumer {
   rpc RequestResource(ResourceRequest) returns (ResourceRequestReply);
   rpc RespondDeferred(ResourceRequestReply) returns (google.protobuf.Empty);
   rpc Join(NetworkJoinRequest) returns (Timestamp);
+  rpc Ping(NodeId) returns (BooleanResponse);
 }
 
 service SharedResource {
@@ -14,6 +15,9 @@ service SharedResource {
   rpc IsLocked(google.protobuf.Empty) returns (BooleanResponse);
   rpc ResourceOperation(SROperation) returns (SROperationReturn);
   rpc Join(NetworkJoinRequest) returns (NetworkJoinResponse);
+  rpc Heartbeat(NodeId) returns (NetworkJoinResponse);
+  // A suspicion, not permission to evict a healthy node. The SR checks age.
+  rpc Remove(NodeId) returns (BooleanResponse);
 }
 
 enum NodeType {
@@ -23,24 +27,32 @@ enum NodeType {
 
 message NodeId {
   uint32 id = 1;
+  string epoch = 2;
+  uint64 requestId = 3;
 }
 
 message NetworkJoinRequest {
   uint32 listeningPort = 1;
   NodeType nodeType = 2;
   optional uint32 assignedId = 3;
+  string session = 4;
+  string epoch = 5;
 }
 
 message NetworkJoinResponse {
   uint32 assignedId = 1;
   map<string, uint32> consumers = 2;
   repeated string shared_resources = 3;
+  string epoch = 4;
+  uint64 revision = 5;
 }
 
 message ResourceRequest {
   uint32 nodeId = 1;
   string srAddress = 2;
   uint32 timestamp = 3;
+  uint64 requestId = 4;
+  string epoch = 5;
 }
 
 message Timestamp {
@@ -60,15 +72,21 @@ message ResourceRequestReply {
   uint32 nodeId = 1;
   ResourceResponse response = 2;
   uint32 timestamp = 3;
+  uint64 requestId = 4;
+  string epoch = 5;
 }
 
 message SROperation {
   uint32 nodeId = 1;
   string operation = 2;
   optional bytes args = 3;
+  uint64 requestId = 4;
+  uint64 operationId = 5;
+  string epoch = 6;
 }
 
 message SROperationReturn {
   bool OK = 1;
   optional bytes data = 2;
+  string error = 3;
 }

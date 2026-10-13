@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import threading
 import time
 
 SR_COUNT = int(sys.argv[1]) if len(sys.argv)>2 else 1
@@ -19,5 +20,4 @@ time.sleep(.1)
 for i in range(CONSUMER_COUNT):
     consumer_procs.append(subprocess.Popen(['konsole', '-e', 'python', 'lib/distrcom_test_consumer.py', str(BASE_PORT + SR_COUNT + i), HOST, str(BASE_PORT)]))
 
-while True:
-    pass
+threading.Event().wait()

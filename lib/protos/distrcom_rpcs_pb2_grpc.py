@@ -50,6 +50,11 @@ class SRConsumerStub:
                 request_serializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.SerializeToString,
                 response_deserializer=protos_dot_distrcom__rpcs__pb2.Timestamp.FromString,
                 _registered_method=True)
+        self.Ping = channel.unary_unary(
+                '/SRConsumer/Ping',
+                request_serializer=protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+                response_deserializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
+                _registered_method=True)
 
 
 class SRConsumerServicer:
@@ -73,6 +78,12 @@ class SRConsumerServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Ping(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_SRConsumerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -90,6 +101,11 @@ def add_SRConsumerServicer_to_server(servicer, server):
                     servicer.Join,
                     request_deserializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.FromString,
                     response_serializer=protos_dot_distrcom__rpcs__pb2.Timestamp.SerializeToString,
+            ),
+            'Ping': grpc.unary_unary_rpc_method_handler(
+                    servicer.Ping,
+                    request_deserializer=protos_dot_distrcom__rpcs__pb2.NodeId.FromString,
+                    response_serializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -183,6 +199,33 @@ class SRConsumer:
             metadata,
             _registered_method=True)
 
+    @staticmethod
+    def Ping(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/SRConsumer/Ping',
+            protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+            protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
 
 class SharedResourceStub:
     """Missing associated documentation comment in .proto file."""
@@ -217,6 +260,16 @@ class SharedResourceStub:
                 '/SharedResource/Join',
                 request_serializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.SerializeToString,
                 response_deserializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinResponse.FromString,
+                _registered_method=True)
+        self.Heartbeat = channel.unary_unary(
+                '/SharedResource/Heartbeat',
+                request_serializer=protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+                response_deserializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinResponse.FromString,
+                _registered_method=True)
+        self.Remove = channel.unary_unary(
+                '/SharedResource/Remove',
+                request_serializer=protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+                response_deserializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
                 _registered_method=True)
 
 
@@ -253,6 +306,19 @@ class SharedResourceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Heartbeat(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Remove(self, request, context):
+        """A suspicion, not permission to evict a healthy node. The SR checks age.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_SharedResourceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -280,6 +346,16 @@ def add_SharedResourceServicer_to_server(servicer, server):
                     servicer.Join,
                     request_deserializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.FromString,
                     response_serializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinResponse.SerializeToString,
+            ),
+            'Heartbeat': grpc.unary_unary_rpc_method_handler(
+                    servicer.Heartbeat,
+                    request_deserializer=protos_dot_distrcom__rpcs__pb2.NodeId.FromString,
+                    response_serializer=protos_dot_distrcom__rpcs__pb2.NetworkJoinResponse.SerializeToString,
+            ),
+            'Remove': grpc.unary_unary_rpc_method_handler(
+                    servicer.Remove,
+                    request_deserializer=protos_dot_distrcom__rpcs__pb2.NodeId.FromString,
+                    response_serializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -417,6 +493,60 @@ class SharedResource:
             '/SharedResource/Join',
             protos_dot_distrcom__rpcs__pb2.NetworkJoinRequest.SerializeToString,
             protos_dot_distrcom__rpcs__pb2.NetworkJoinResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Heartbeat(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/SharedResource/Heartbeat',
+            protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+            protos_dot_distrcom__rpcs__pb2.NetworkJoinResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Remove(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/SharedResource/Remove',
+            protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+            protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
             options,
             channel_credentials,
             insecure,
