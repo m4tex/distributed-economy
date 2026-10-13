@@ -48,6 +48,8 @@ class SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
         if request.nodeId not in self.consumer.awaiting_responses:
             raise Exception('Received unknown deferred response')
 
+        print(f'Received deferred response from {request.nodeId}.')
+
         self.consumer.time = int(max(self.consumer.time, request.timestamp)) + 1
 
         self.consumer.awaiting_responses.remove(request.nodeId)
@@ -71,6 +73,8 @@ class SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
             if local_timestamp_comes_first_condition or local_id_comes_first_condition:
                 # Place the received request in the deferred queue
                 self.consumer.deferred_responses.append((request.nodeId, request.timestamp))
+
+                print(f'Received a conflicting request from {request.nodeId}, though I came first. Deferred.')
 
                 return distrcom_rpcs_pb2.ResourceRequestReply(nodeId=self.consumer.nodeId, response=distrcom_rpcs_pb2.DEFERRED)
 
@@ -100,7 +104,9 @@ class SRConsumer:
 
         self.request_callback = None
 
-    def Start(self, root_host, cb_on_joined):
+    # Initializes the SR consumer. Runs cb_on_joined once successful.
+    # Non-blocking, starts a listening server on a separate thread.
+    def start(self, root_host, cb_on_joined):
         async def serve():
             global server
 
@@ -168,17 +174,19 @@ class SRConsumer:
         threading.Thread(target=lambda: asyncio.run(serve()), daemon=True).start()
 
     # Either selects an available SR or picks one at random to spread the workload
-    def SelectSR(self):
+    def select_sr(self):
         pass
 
     # TODO: wrap callback in lock, free
-    # Sends a request to the network, then calls the callback when and if successful
-    def Request(self, sr_addr, callback):
+    # Sends a request to the network, then calls the callback once access has been granted
+    def request(self, sr_addr, callback):
+        print(f'Sending a request for {sr_addr}')
+
         self.time += 1 # We send a request, therefore step time forward
         self.ongoing_request = (sr_addr, self.time)
 
         request_payload = distrcom_rpcs_pb2.ResourceRequest(nodeId=self.nodeId, srAddress=sr_addr, timestamp=self.time)
-        tasks = [asyncio.create_task(stub.Request(request_payload)) for stub, _ in self.consumers.values()]
+        tasks = [asyncio.create_task(stub.request(request_payload)) for stub, _ in self.consumers.values()]
 
         done, pending = asyncio.run(asyncio.wait(
             tasks,
@@ -206,7 +214,7 @@ class SRConsumer:
 
             self.request_callback()
 
-
+    # Wraps the consumer's critical section code in mutex-like lock and unlock for extra protection
     def __run_with_lock(self, func):
         if self.ongoing_request is None:
             raise Exception("Freeing without ongoing request")
@@ -227,6 +235,8 @@ class SRConsumer:
         if not acq_response.OK:
             # This means the SR is currently taken
             raise Exception("SR acquire failed")
+
+        print('Access granted, SR acquired.')
 
         func()
 
@@ -254,10 +264,12 @@ class SRConsumer:
             asyncio.wait(tasks, timeout=LIVENESS_TIMEOUT)
         )
 
+        print(f'Done with SR. Sent deferred to: {[d[0] for d in self.deferred_responses]}')
+
         if len(pending) > 0:
             pass # TODO: handle stale nodes
 
-
+# TODO: add lock timeout
 class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
     def __init__(self, provider):
         self.provider = provider
@@ -287,14 +299,21 @@ class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
 
     async def Free(self, request, context):
         if self.provider.currentOwner != request.id:
+            print(f'ERROR: Free received from {request.id}, currently owned by {self.provider.currentOwner}')
             return distrcom_rpcs_pb2.BooleanResponse(OK=False)
 
         self.provider.currentOwner = None
+
+        print(f'Free received from {request.id}')
+
         return distrcom_rpcs_pb2.BooleanResponse(OK=True)
 
     async def Acquire(self, request, context):
         if self.provider.currentOwner is not None:
+            print(f'ERROR: Acquire received from {request.id}, owned by {self.provider.currentOwner}')
             return distrcom_rpcs_pb2.BooleanResponse(OK=False)
+
+        print(f'Acquire received from {request.id}')
 
         self.provider.currentOwner = request.id
         return distrcom_rpcs_pb2.BooleanResponse(OK=True)
@@ -303,6 +322,8 @@ class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
         if (request.nodeId != self.provider.currentOwner
                 or not self.provider.operationCallbacks.has_key(request.operation)):
             return distrcom_rpcs_pb2.SROperationReturn(OK=False)
+
+        print(f'({request.nodeId}): Executing {request.operation}.')
 
         if request.HasField('args'):
             operation_return = self.provider.operationCallbacks[request.operation](self.provider.srData, request.args)
@@ -341,7 +362,8 @@ class SharedResourceProvider:
     def __init__(self, initial_sr_data):
         self.srData = initial_sr_data
 
-    def Start(self, port = SERVER_PORT):
+    # Initializes SR and starts the server thread. Non-blocking.
+    def start(self, port = SERVER_PORT):
         async def serve():
             global server
             if server is not None:
@@ -394,6 +416,6 @@ class SharedResourceProvider:
 
         threading.Thread(target=lambda: asyncio.run(serve()), daemon=True).start()
 
-    # Adds an atomic operation on the shared resource
-    def AddResourceOperation(self, name, callback):
+    # Adds an operation to the shared resource that acts on its stored data
+    def add_resource_operation(self, name, callback):
         self.operationCallbacks[name] = callback

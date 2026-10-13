@@ -11,10 +11,10 @@ def resource_granted():
     print('Resource Granted')
 
 consumer = SRConsumer(PORT)
-consumer.Start(
+consumer.start(
     SR_ADDR,
     lambda:
-        consumer.Request(consumer.sharedResources[0], resource_granted)
+        consumer.request(consumer.sharedResources[0], resource_granted)
 )
 
 while True:

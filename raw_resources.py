@@ -4,7 +4,7 @@ from lib.distrcom import *
 PORT = int(sys.argv[1]) if len(sys.argv)>1 else 8000
 
 provider = SharedResourceProvider(None)
-provider.Start(PORT)
+provider.start(PORT)
 
 initial_data = {
     'stock': 1000,      # antal enheter råvara i lagret
@@ -30,9 +30,9 @@ def consume(data, args):
     return b'success'
 
 provider = SharedResourceProvider(initial_data)
-provider.AddResourceOperation('produce', produce)
-provider.AddResourceOperation('consume', consume)
-provider.Start(PORT)
+provider.add_resource_operation('produce', produce)
+provider.add_resource_operation('consume', consume)
+provider.start(PORT)
 
 while True:
     pass

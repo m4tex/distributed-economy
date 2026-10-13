@@ -14,13 +14,13 @@ MIN_WAIT = 1.0
 MAX_WAIT = 5.0
 
 factory = SRConsumer(PORT)
-factory.Start(SR_ADDR)
+factory.start(SR_ADDR)
 
 def factory_loop():
     while True:
         # 1. Begär access till SR
         print(f"[F{ PORT }] Requesting SR access...")
-        factory.Request(SR_ADDR)
+        factory.request(SR_ADDR)
 
         # 2. När access beviljas (callback från libben), kör consume
         # TODO: quadV's lib måste stödja callbacks, annars simulera med sleep
