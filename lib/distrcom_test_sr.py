@@ -1,4 +1,5 @@
 import sys
+import threading
 from distrcom import *
 
 PORT = int(sys.argv[1]) if len(sys.argv)>1 else 8000
@@ -14,5 +15,4 @@ provider.add_resource_operation('increment', increment)
 provider.add_resource_operation('read', read)
 provider.start(PORT)
 
-while True:
-    pass
+threading.Event().wait()
