@@ -1,0 +1,2 @@
+Command to compile grpc protos, from root:
+python -m grpc_tools.protoc -Ilib --python_out=lib --pyi_out=lib --grpc_python_out=lib  ./lib/protos/distrcom_rpcs.proto

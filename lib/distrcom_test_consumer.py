@@ -1,6 +1,6 @@
 import asyncio
 import sys
-from lib.distrcom import *
+from distrcom import *
 
 PORT = int(sys.argv[1]) if len(sys.argv)>3 else 8001
 SR_IP = sys.argv[2] if len(sys.argv) > 3 else '127.0.0.1'

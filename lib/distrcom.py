@@ -1,10 +1,10 @@
 import asyncio
 import threading
-from functools import partial
 
 import grpc
 from google.protobuf import empty_pb2
-from protos import distrcom_rpcs_pb2, distrcom_rpcs_pb2_grpc
+from protos import distrcom_rpcs_pb2
+from protos import distrcom_rpcs_pb2_grpc
 
 __all__ = [
     'SharedResourceConsumer',
