@@ -1,6 +1,8 @@
 import sys
 from lib.distrcom import *
 import json
+import threading
+import time
 
 PORT = int(sys.argv[1]) if len(sys.argv)>1 else 8000
 
@@ -38,5 +40,9 @@ provider.add_resource_operation('get_stock', get_stock)
 
 provider.start(PORT)
 
-while True:
-    pass
+#threading.Event().wait() # doesnt allow c++
+try:
+    while True:
+        time.sleep(3600) # lower cpu usaeg
+except KeyboardInterrupt:
+    print("Manual shutdown...")
