@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import threading
 from distrcom import *
 
 PORT = int(sys.argv[1]) if len(sys.argv)>3 else 8001
@@ -23,5 +24,4 @@ consumer.start(
     cb_on_joined
 )
 
-while True:
-    pass
+threading.Event().wait()

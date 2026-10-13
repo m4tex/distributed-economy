@@ -60,7 +60,7 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
 
         return distrcom_rpcs_pb2.Timestamp(time=self.consumer.time)
 
-    def RespondDeferred(self, request, context):
+    async def RespondDeferred(self, request, context):
         if request.nodeId not in self.consumer.awaiting_responses:
             raise Exception('Received unknown deferred response')
 
@@ -181,19 +181,20 @@ class SharedResourceConsumer:
                 )
             )
 
-            self.consumers = {
+            # Preserve peers announced by Join while the root RPC was in flight.
+            self.consumers.update({
                 consumer_id: (
                     distrcom_rpcs_pb2_grpc.SRConsumerStub(
                         grpc.aio.insecure_channel(consumer_host)
                     ),
                     consumer_host
                 ) for consumer_host, consumer_id in join_response.consumers.items()
-            }
+            })
 
-            self.sharedResources = {
+            self.sharedResources.update({
                 sr_host: distrcom_rpcs_pb2_grpc.SharedResourceStub(grpc.aio.insecure_channel(sr_host))
                 for sr_host in join_response.shared_resources
-            }
+            })
 
             self.sharedResources[root_host] = distrcom_rpcs_pb2_grpc.SharedResourceStub(grpc.aio.insecure_channel(root_host))
 
@@ -207,7 +208,7 @@ class SharedResourceConsumer:
             ) for stub, _ in self.consumers.values()])
 
             # Sync time
-            self.time = max([r.time for r in join_responses], default=0) + 1
+            self.time = max([self.time, *(r.time for r in join_responses)]) + 1
             self.nodeId = join_response.assignedId
 
             print(f'[{self.time}][{self.nodeId}] Join approved by all {len(join_responses)} consumers.')
@@ -226,9 +227,9 @@ class SharedResourceConsumer:
 
     # Sends a request to the network, then calls the callback once access has been granted
     async def request(self, sr_addr):
-        self.ongoing_request = (sr_addr, self.time)
-
         self.time += 1 # We send a request, therefore step time forward
+        # Compare exactly the same timestamp that peers receive.
+        self.ongoing_request = (sr_addr, self.time)
 
         self.awaiting_responses = list(self.consumers.keys())
 
