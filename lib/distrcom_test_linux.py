@@ -3,7 +3,7 @@ import sys
 import time
 
 SR_COUNT = int(sys.argv[1]) if len(sys.argv)>2 else 1
-CONSUMER_COUNT = int(sys.argv[2]) if len(sys.argv)>2 else 20
+CONSUMER_COUNT = int(sys.argv[2]) if len(sys.argv)>2 else 5
 
 HOST = '127.0.0.1'
 BASE_PORT = 8000

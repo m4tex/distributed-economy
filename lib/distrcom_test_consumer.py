@@ -15,6 +15,7 @@ async def cb_on_joined():
         # await asyncio.sleep(.1)
         await consumer.operation('increment')
         data = await consumer.operation('read')
+        await asyncio.sleep(20)
         print('Received', int.from_bytes(data, 'big'))
         await consumer.free()
 

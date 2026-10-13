@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aprotos/distrcom_rpcs.proto\x1a\x1bgoogle/protobuf/empty.proto\"\x14\n\x06NodeId\x12\n\n\x02id\x18\x01 \x01(\r\"p\n\x12NetworkJoinRequest\x12\x15\n\rlisteningPort\x18\x01 \x01(\r\x12\x1b\n\x08nodeType\x18\x02 \x01(\x0e\x32\t.NodeType\x12\x17\n\nassignedId\x18\x03 \x01(\rH\x00\x88\x01\x01\x42\r\n\x0b_assignedId\"\xad\x01\n\x13NetworkJoinResponse\x12\x12\n\nassignedId\x18\x01 \x01(\r\x12\x36\n\tconsumers\x18\x02 \x03(\x0b\x32#.NetworkJoinResponse.ConsumersEntry\x12\x18\n\x10shared_resources\x18\x03 \x03(\t\x1a\x30\n\x0e\x43onsumersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\r:\x02\x38\x01\"G\n\x0fResourceRequest\x12\x0e\n\x06nodeId\x18\x01 \x01(\r\x12\x11\n\tsrAddress\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\r\"\x19\n\tTimestamp\x12\x0c\n\x04time\x18\x01 \x01(\r\"\x1d\n\x0f\x42ooleanResponse\x12\n\n\x02OK\x18\x01 \x01(\x08\"^\n\x14ResourceRequestReply\x12\x0e\n\x06nodeId\x18\x01 \x01(\r\x12#\n\x08response\x18\x02 \x01(\x0e\x32\x11.ResourceResponse\x12\x11\n\ttimestamp\x18\x03 \x01(\r\"L\n\x0bSROperation\x12\x0e\n\x06nodeId\x18\x01 \x01(\r\x12\x11\n\toperation\x18\x02 \x01(\t\x12\x11\n\x04\x61rgs\x18\x03 \x01(\x0cH\x00\x88\x01\x01\x42\x07\n\x05_args\";\n\x11SROperationReturn\x12\n\n\x02OK\x18\x01 \x01(\x08\x12\x11\n\x04\x64\x61ta\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x42\x07\n\x05_data*-\n\x08NodeType\x12\x0c\n\x08\x43ONSUMER\x10\x00\x12\x13\n\x0fSHARED_RESOURCE\x10\x01*(\n\x10ResourceResponse\x12\x06\n\x02OK\x10\x00\x12\x0c\n\x08\x44\x45\x46\x45RRED\x10\x01\x32\xb3\x01\n\nSRConsumer\x12:\n\x0fRequestResource\x12\x10.ResourceRequest\x1a\x15.ResourceRequestReply\x12@\n\x0fRespondDeferred\x12\x15.ResourceRequestReply\x1a\x16.google.protobuf.Empty\x12\'\n\x04Join\x12\x13.NetworkJoinRequest\x1a\n.Timestamp2\xf9\x01\n\x0eSharedResource\x12$\n\x07\x41\x63quire\x12\x07.NodeId\x1a\x10.BooleanResponse\x12!\n\x04\x46ree\x12\x07.NodeId\x1a\x10.BooleanResponse\x12\x34\n\x08IsLocked\x12\x16.google.protobuf.Empty\x1a\x10.BooleanResponse\x12\x35\n\x11ResourceOperation\x12\x0c.SROperation\x1a\x12.SROperationReturn\x12\x31\n\x04Join\x12\x13.NetworkJoinRequest\x1a\x14.NetworkJoinResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aprotos/distrcom_rpcs.proto\x1a\x1bgoogle/protobuf/empty.proto\".\n\x06NodeId\x12\n\n\x02id\x18\x01 \x01(\r\x12\x18\n\x10requestTimestamp\x18\x02 \x01(\r\"\x81\x01\n\x12NetworkJoinRequest\x12\x15\n\rlisteningPort\x18\x01 \x01(\r\x12\x1b\n\x08nodeType\x18\x02 \x01(\x0e\x32\t.NodeType\x12\x17\n\nassignedId\x18\x03 \x01(\rH\x00\x88\x01\x01\x12\x0f\n\x07session\x18\x04 \x01(\tB\r\n\x0b_assignedId\"\xad\x01\n\x13NetworkJoinResponse\x12\x12\n\nassignedId\x18\x01 \x01(\r\x12\x36\n\tconsumers\x18\x02 \x03(\x0b\x32#.NetworkJoinResponse.ConsumersEntry\x12\x18\n\x10shared_resources\x18\x03 \x03(\t\x1a\x30\n\x0e\x43onsumersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\r:\x02\x38\x01\"G\n\x0fResourceRequest\x12\x0e\n\x06nodeId\x18\x01 \x01(\r\x12\x11\n\tsrAddress\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\r\"\x19\n\tTimestamp\x12\x0c\n\x04time\x18\x01 \x01(\r\"\x1d\n\x0f\x42ooleanResponse\x12\n\n\x02OK\x18\x01 \x01(\x08\"x\n\x14ResourceRequestReply\x12\x18\n\x10requestTimestamp\x18\x04 \x01(\r\x12\x0e\n\x06nodeId\x18\x01 \x01(\r\x12#\n\x08response\x18\x02 \x01(\x0e\x32\x11.ResourceResponse\x12\x11\n\ttimestamp\x18\x03 \x01(\r\"y\n\x0bSROperation\x12\x0e\n\x06nodeId\x18\x01 \x01(\r\x12\x11\n\toperation\x18\x02 \x01(\t\x12\x11\n\x04\x61rgs\x18\x03 \x01(\x0cH\x00\x88\x01\x01\x12\x11\n\trequestId\x18\x04 \x01(\t\x12\x18\n\x10requestTimestamp\x18\x05 \x01(\rB\x07\n\x05_args\";\n\x11SROperationReturn\x12\n\n\x02OK\x18\x01 \x01(\x08\x12\x11\n\x04\x64\x61ta\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x42\x07\n\x05_data*-\n\x08NodeType\x12\x0c\n\x08\x43ONSUMER\x10\x00\x12\x13\n\x0fSHARED_RESOURCE\x10\x01*(\n\x10ResourceResponse\x12\x06\n\x02OK\x10\x00\x12\x0c\n\x08\x44\x45\x46\x45RRED\x10\x01\x32\xdc\x01\n\nSRConsumer\x12\'\n\x04Ping\x12\x16.google.protobuf.Empty\x1a\x07.NodeId\x12:\n\x0fRequestResource\x12\x10.ResourceRequest\x1a\x15.ResourceRequestReply\x12@\n\x0fRespondDeferred\x12\x15.ResourceRequestReply\x1a\x16.google.protobuf.Empty\x12\'\n\x04Join\x12\x13.NetworkJoinRequest\x1a\n.Timestamp2\xa2\x02\n\x0eSharedResource\x12\'\n\nRemoveNode\x12\x07.NodeId\x1a\x10.BooleanResponse\x12$\n\x07\x41\x63quire\x12\x07.NodeId\x1a\x10.BooleanResponse\x12!\n\x04\x46ree\x12\x07.NodeId\x1a\x10.BooleanResponse\x12\x34\n\x08IsLocked\x12\x16.google.protobuf.Empty\x1a\x10.BooleanResponse\x12\x35\n\x11ResourceOperation\x12\x0c.SROperation\x1a\x12.SROperationReturn\x12\x31\n\x04Join\x12\x13.NetworkJoinRequest\x1a\x14.NetworkJoinResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,32 +34,32 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_NETWORKJOINRESPONSE_CONSUMERSENTRY']._loaded_options = None
   _globals['_NETWORKJOINRESPONSE_CONSUMERSENTRY']._serialized_options = b'8\001'
-  _globals['_NODETYPE']._serialized_start=737
-  _globals['_NODETYPE']._serialized_end=782
-  _globals['_RESOURCERESPONSE']._serialized_start=784
-  _globals['_RESOURCERESPONSE']._serialized_end=824
+  _globals['_NODETYPE']._serialized_start=852
+  _globals['_NODETYPE']._serialized_end=897
+  _globals['_RESOURCERESPONSE']._serialized_start=899
+  _globals['_RESOURCERESPONSE']._serialized_end=939
   _globals['_NODEID']._serialized_start=59
-  _globals['_NODEID']._serialized_end=79
-  _globals['_NETWORKJOINREQUEST']._serialized_start=81
-  _globals['_NETWORKJOINREQUEST']._serialized_end=193
-  _globals['_NETWORKJOINRESPONSE']._serialized_start=196
-  _globals['_NETWORKJOINRESPONSE']._serialized_end=369
-  _globals['_NETWORKJOINRESPONSE_CONSUMERSENTRY']._serialized_start=321
-  _globals['_NETWORKJOINRESPONSE_CONSUMERSENTRY']._serialized_end=369
-  _globals['_RESOURCEREQUEST']._serialized_start=371
-  _globals['_RESOURCEREQUEST']._serialized_end=442
-  _globals['_TIMESTAMP']._serialized_start=444
-  _globals['_TIMESTAMP']._serialized_end=469
-  _globals['_BOOLEANRESPONSE']._serialized_start=471
-  _globals['_BOOLEANRESPONSE']._serialized_end=500
-  _globals['_RESOURCEREQUESTREPLY']._serialized_start=502
-  _globals['_RESOURCEREQUESTREPLY']._serialized_end=596
-  _globals['_SROPERATION']._serialized_start=598
-  _globals['_SROPERATION']._serialized_end=674
-  _globals['_SROPERATIONRETURN']._serialized_start=676
-  _globals['_SROPERATIONRETURN']._serialized_end=735
-  _globals['_SRCONSUMER']._serialized_start=827
-  _globals['_SRCONSUMER']._serialized_end=1006
-  _globals['_SHAREDRESOURCE']._serialized_start=1009
-  _globals['_SHAREDRESOURCE']._serialized_end=1258
+  _globals['_NODEID']._serialized_end=105
+  _globals['_NETWORKJOINREQUEST']._serialized_start=108
+  _globals['_NETWORKJOINREQUEST']._serialized_end=237
+  _globals['_NETWORKJOINRESPONSE']._serialized_start=240
+  _globals['_NETWORKJOINRESPONSE']._serialized_end=413
+  _globals['_NETWORKJOINRESPONSE_CONSUMERSENTRY']._serialized_start=365
+  _globals['_NETWORKJOINRESPONSE_CONSUMERSENTRY']._serialized_end=413
+  _globals['_RESOURCEREQUEST']._serialized_start=415
+  _globals['_RESOURCEREQUEST']._serialized_end=486
+  _globals['_TIMESTAMP']._serialized_start=488
+  _globals['_TIMESTAMP']._serialized_end=513
+  _globals['_BOOLEANRESPONSE']._serialized_start=515
+  _globals['_BOOLEANRESPONSE']._serialized_end=544
+  _globals['_RESOURCEREQUESTREPLY']._serialized_start=546
+  _globals['_RESOURCEREQUESTREPLY']._serialized_end=666
+  _globals['_SROPERATION']._serialized_start=668
+  _globals['_SROPERATION']._serialized_end=789
+  _globals['_SROPERATIONRETURN']._serialized_start=791
+  _globals['_SROPERATIONRETURN']._serialized_end=850
+  _globals['_SRCONSUMER']._serialized_start=942
+  _globals['_SRCONSUMER']._serialized_end=1162
+  _globals['_SHAREDRESOURCE']._serialized_start=1165
+  _globals['_SHAREDRESOURCE']._serialized_end=1455
 # @@protoc_insertion_point(module_scope)

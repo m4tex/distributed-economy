@@ -35,6 +35,11 @@ class SRConsumerStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.Ping = channel.unary_unary(
+                '/SRConsumer/Ping',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=protos_dot_distrcom__rpcs__pb2.NodeId.FromString,
+                _registered_method=True)
         self.RequestResource = channel.unary_unary(
                 '/SRConsumer/RequestResource',
                 request_serializer=protos_dot_distrcom__rpcs__pb2.ResourceRequest.SerializeToString,
@@ -54,6 +59,12 @@ class SRConsumerStub:
 
 class SRConsumerServicer:
     """Missing associated documentation comment in .proto file."""
+
+    def Ping(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def RequestResource(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -76,6 +87,11 @@ class SRConsumerServicer:
 
 def add_SRConsumerServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Ping': grpc.unary_unary_rpc_method_handler(
+                    servicer.Ping,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+            ),
             'RequestResource': grpc.unary_unary_rpc_method_handler(
                     servicer.RequestResource,
                     request_deserializer=protos_dot_distrcom__rpcs__pb2.ResourceRequest.FromString,
@@ -101,6 +117,33 @@ def add_SRConsumerServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class SRConsumer:
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def Ping(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/SRConsumer/Ping',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            protos_dot_distrcom__rpcs__pb2.NodeId.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def RequestResource(request,
@@ -193,6 +236,11 @@ class SharedResourceStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.RemoveNode = channel.unary_unary(
+                '/SharedResource/RemoveNode',
+                request_serializer=protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+                response_deserializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
+                _registered_method=True)
         self.Acquire = channel.unary_unary(
                 '/SharedResource/Acquire',
                 request_serializer=protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
@@ -222,6 +270,12 @@ class SharedResourceStub:
 
 class SharedResourceServicer:
     """Missing associated documentation comment in .proto file."""
+
+    def RemoveNode(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def Acquire(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -256,6 +310,11 @@ class SharedResourceServicer:
 
 def add_SharedResourceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'RemoveNode': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemoveNode,
+                    request_deserializer=protos_dot_distrcom__rpcs__pb2.NodeId.FromString,
+                    response_serializer=protos_dot_distrcom__rpcs__pb2.BooleanResponse.SerializeToString,
+            ),
             'Acquire': grpc.unary_unary_rpc_method_handler(
                     servicer.Acquire,
                     request_deserializer=protos_dot_distrcom__rpcs__pb2.NodeId.FromString,
@@ -291,6 +350,33 @@ def add_SharedResourceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class SharedResource:
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def RemoveNode(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/SharedResource/RemoveNode',
+            protos_dot_distrcom__rpcs__pb2.NodeId.SerializeToString,
+            protos_dot_distrcom__rpcs__pb2.BooleanResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Acquire(request,

@@ -23,20 +23,24 @@ OK: ResourceResponse
 DEFERRED: ResourceResponse
 
 class NodeId(_message.Message):
-    __slots__ = ("id",)
+    __slots__ = ("id", "requestTimestamp")
     ID_FIELD_NUMBER: _ClassVar[int]
+    REQUESTTIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     id: int
-    def __init__(self, id: _Optional[int] = ...) -> None: ...
+    requestTimestamp: int
+    def __init__(self, id: _Optional[int] = ..., requestTimestamp: _Optional[int] = ...) -> None: ...
 
 class NetworkJoinRequest(_message.Message):
-    __slots__ = ("listeningPort", "nodeType", "assignedId")
+    __slots__ = ("listeningPort", "nodeType", "assignedId", "session")
     LISTENINGPORT_FIELD_NUMBER: _ClassVar[int]
     NODETYPE_FIELD_NUMBER: _ClassVar[int]
     ASSIGNEDID_FIELD_NUMBER: _ClassVar[int]
+    SESSION_FIELD_NUMBER: _ClassVar[int]
     listeningPort: int
     nodeType: NodeType
     assignedId: int
-    def __init__(self, listeningPort: _Optional[int] = ..., nodeType: _Optional[_Union[NodeType, str]] = ..., assignedId: _Optional[int] = ...) -> None: ...
+    session: str
+    def __init__(self, listeningPort: _Optional[int] = ..., nodeType: _Optional[_Union[NodeType, str]] = ..., assignedId: _Optional[int] = ..., session: _Optional[str] = ...) -> None: ...
 
 class NetworkJoinResponse(_message.Message):
     __slots__ = ("assignedId", "consumers", "shared_resources")
@@ -78,24 +82,30 @@ class BooleanResponse(_message.Message):
     def __init__(self, OK: _Optional[bool] = ...) -> None: ...
 
 class ResourceRequestReply(_message.Message):
-    __slots__ = ("nodeId", "response", "timestamp")
+    __slots__ = ("requestTimestamp", "nodeId", "response", "timestamp")
+    REQUESTTIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     NODEID_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
+    requestTimestamp: int
     nodeId: int
     response: ResourceResponse
     timestamp: int
-    def __init__(self, nodeId: _Optional[int] = ..., response: _Optional[_Union[ResourceResponse, str]] = ..., timestamp: _Optional[int] = ...) -> None: ...
+    def __init__(self, requestTimestamp: _Optional[int] = ..., nodeId: _Optional[int] = ..., response: _Optional[_Union[ResourceResponse, str]] = ..., timestamp: _Optional[int] = ...) -> None: ...
 
 class SROperation(_message.Message):
-    __slots__ = ("nodeId", "operation", "args")
+    __slots__ = ("nodeId", "operation", "args", "requestId", "requestTimestamp")
     NODEID_FIELD_NUMBER: _ClassVar[int]
     OPERATION_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
+    REQUESTID_FIELD_NUMBER: _ClassVar[int]
+    REQUESTTIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     nodeId: int
     operation: str
     args: bytes
-    def __init__(self, nodeId: _Optional[int] = ..., operation: _Optional[str] = ..., args: _Optional[bytes] = ...) -> None: ...
+    requestId: str
+    requestTimestamp: int
+    def __init__(self, nodeId: _Optional[int] = ..., operation: _Optional[str] = ..., args: _Optional[bytes] = ..., requestId: _Optional[str] = ..., requestTimestamp: _Optional[int] = ...) -> None: ...
 
 class SROperationReturn(_message.Message):
     __slots__ = ("OK", "data")
