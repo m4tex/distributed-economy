@@ -13,7 +13,7 @@ CONSUME_AMOUNT = 50
 MIN_WAIT = 1.0
 MAX_WAIT = 5.0
 
-factory = SRConsumer(PORT)
+factory = SharedResourceConsumer(PORT)
 factory.start(SR_ADDR)
 
 def factory_loop():

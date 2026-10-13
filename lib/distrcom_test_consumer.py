@@ -10,7 +10,7 @@ SR_ADDR = f'{SR_IP}:{SR_PORT}'
 def resource_granted():
     print('Resource Granted')
 
-consumer = SRConsumer(PORT)
+consumer = SharedResourceConsumer(PORT)
 consumer.start(
     SR_ADDR,
     lambda:

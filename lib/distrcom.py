@@ -6,6 +6,11 @@ import grpc
 from google.protobuf import empty_pb2
 from protos import distrcom_rpcs_pb2, distrcom_rpcs_pb2_grpc
 
+__all__ = [
+    'SharedResourceConsumer',
+    'SharedResourceProvider',
+]
+
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 8000
 SERVER_HOST = f'{SERVER_IP}:{SERVER_PORT}'
@@ -25,7 +30,7 @@ def peer_ipv4(context):
     return peer.split(':')[1]
 
 # Handles RPC calls from deferred responses (part of SR conflict resolution)
-class SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
+class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
     def __init__(self, consumer):
         self.consumer = consumer
 
@@ -82,7 +87,7 @@ class SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
 
         return distrcom_rpcs_pb2.ResourceRequestReply(nodeId=self.consumer.nodeId, response=distrcom_rpcs_pb2.OK)
 
-class SRConsumer:
+class SharedResourceConsumer:
     def __init__(self, port):
         self.port = port
         self.nodeId = -1
@@ -116,7 +121,7 @@ class SRConsumer:
             server = grpc.aio.server()
 
             distrcom_rpcs_pb2_grpc.add_SRConsumerServicer_to_server(
-                SRConsumerHandler(self),
+                _SRConsumerHandler(self),
                 server
             )
 
@@ -270,7 +275,7 @@ class SRConsumer:
             pass # TODO: handle stale nodes
 
 # TODO: add lock timeout
-class SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
+class _SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
     def __init__(self, provider):
         self.provider = provider
 
@@ -371,7 +376,7 @@ class SharedResourceProvider:
 
             server = grpc.aio.server()
 
-            distrcom_rpcs_pb2_grpc.add_SharedResourceServicer_to_server(SRProviderHandler(self), server)
+            distrcom_rpcs_pb2_grpc.add_SharedResourceServicer_to_server(_SRProviderHandler(self), server)
 
             server.add_insecure_port('0.0.0.0:{}'.format(port))
 
