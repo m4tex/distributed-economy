@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+service SRConsumer {
+  rpc Ping(google.protobuf.Empty) returns (NodeId);
+  rpc RequestResource(ResourceRequest) returns (ResourceRequestReply);
+  rpc RespondDeferred(ResourceRequestReply) returns (google.protobuf.Empty);
+  rpc Join(NetworkJoinRequest) returns (Timestamp);
+}
+
+service SharedResource {
+  rpc RemoveNode(NodeId) returns (BooleanResponse);
+  rpc Acquire(NodeId) returns (BooleanResponse);
+  rpc Free(NodeId) returns (BooleanResponse);
+  rpc IsLocked(google.protobuf.Empty) returns (BooleanResponse);
+  rpc ResourceOperation(SROperation) returns (SROperationReturn);
+  rpc Join(NetworkJoinRequest) returns (NetworkJoinResponse);
+}
+
+enum NodeType {
+  CONSUMER = 0;
+  SHARED_RESOURCE = 1;
+}
+
+message NodeId {
+  uint32 id = 1;
+  uint32 requestTimestamp = 2;
+}
+
+message NetworkJoinRequest {
+  uint32 listeningPort = 1;
+  NodeType nodeType = 2;
+  optional uint32 assignedId = 3;
+  string session = 4;
+}
+
+message NetworkJoinResponse {
+  uint32 assignedId = 1;
+  map<string, uint32> consumers = 2;
+  repeated string shared_resources = 3;
+}
+
+message ResourceRequest {
+  uint32 nodeId = 1;
+  string srAddress = 2;
+  uint32 timestamp = 3;
+}
+
+message Timestamp {
+  uint32 time = 1;
+}
+
+message BooleanResponse {
+  bool OK = 1;
+}
+
+enum ResourceResponse {
+  OK = 0;
+  DEFERRED = 1;
+}
+
+message ResourceRequestReply {
+  uint32 requestTimestamp = 4;
+  uint32 nodeId = 1;
+  ResourceResponse response = 2;
+  uint32 timestamp = 3;
+}
+
+message SROperation {
+  uint32 nodeId = 1;
+  string operation = 2;
+  optional bytes args = 3;
+  string requestId = 4;
+  uint32 requestTimestamp = 5;
+}
+
+message SROperationReturn {
+  bool OK = 1;
+  optional bytes data = 2;
+}
