@@ -19,7 +19,7 @@ fail_check_interval = 30.0
 fail_chance = 0.5
 critical_fail_chance = 0.02
 
-wait = int(sys.argv[4]) if len(sys.argv) > 3 else random.uniform(MIN_WAIT, MAX_WAIT)  # set interval randomly
+wait = int(sys.argv[4]) if len(sys.argv) > 4 else random.uniform(MIN_WAIT, MAX_WAIT)  # set interval randomly
 
 async def factory_loop():
     last_fail_check = time.time()
@@ -27,18 +27,18 @@ async def factory_loop():
         # 1. Begär access till SR
         #print(f"[F{ PORT }] Requesting SR access...")
         
-        # scenario 1: failure check every 30s
-        now = time.time()
-        if now - last_fail_check > fail_check_interval:
-            last_fail_check = now
-            if random.random() > fail_chance: # 50% chans for failure
+        # scenario 1: failure check every 30s, duplicate distrcom
+        # now = time.time()
+        # if now - last_fail_check > fail_check_interval:
+            # last_fail_check = now
+            # if random.random() > fail_chance: # 50% chans for failure
                 
-                if random.random() < critical_fail_chance: # liten chans för fail-stop
-                    print(" INITIATED FAIL-STOP (permanent)")
-                    quit()
-                else:
-                    print(" INITIATED FAIL-STOP-RETURN")
-                    time.sleep(5)
+                # if random.random() < critical_fail_chance: # liten chans för fail-stop
+                    # print(" INITIATED FAIL-STOP (permanent)")
+                    # quit()
+                # else:
+                    # print(" INITIATED FAIL-STOP-RETURN")
+                    # time.sleep(5)
         
         # 1. Begär access till SR
         await factory.request(list(factory.sharedResources.keys())[0])
@@ -46,8 +46,8 @@ async def factory_loop():
         # 2. När access beviljas (callback från libben), kör consume
         await factory.operation('produce',b'150')
         data = await factory.operation('get_stock')
-        print(data)
-        print(json.loads(data.decode()))
+        #print(data)
+        #print(json.loads(data.decode()))
 
         # 3. Släpp access (libben sköter detta)
         await factory.free()

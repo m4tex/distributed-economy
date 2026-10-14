@@ -4,6 +4,9 @@ import json
 import threading
 import time
 
+#SERVER_IP = '25.12.136.194'
+SERVER_IP = '127.0.0.1'
+
 PORT = int(sys.argv[1]) if len(sys.argv)>1 else 8000
 
 initial_data = {
