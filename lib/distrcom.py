@@ -85,7 +85,8 @@ class _SRConsumerHandler(distrcom_rpcs_pb2_grpc.SRConsumerServicer):
     async def RespondDeferred(self, request, context):
         self.consumer.time = max(self.consumer.time, request.timestamp) + 1
         lr = self.consumer.ongoing_request
-        # Duplicates and replies belonging to an earlier request are harmless.
+
+        # Handle duplicates and replies belonging to an earlier reques
         if (lr is not None and request.requestTimestamp == lr[1]
                 and request.response == distrcom_rpcs_pb2.OK):
             self.consumer.awaiting_responses.discard(request.nodeId)
@@ -365,7 +366,7 @@ class SharedResourceConsumer:
                         pass # Re-request also recovers a lost deferred response.
             await self.acquire()
         except BaseException:
-            # Best effort cleanup on cancellation/error, without hiding the cause.
+            # Cleanup attempt
             try:
                 await asyncio.wait_for(self.free(), LIVENESS_TIMEOUT)
             except (Exception, asyncio.CancelledError):
@@ -442,7 +443,7 @@ class _SRProviderHandler(distrcom_rpcs_pb2_grpc.SharedResourceServicer):
             node_id = self.provider.sessions.get(session)
             if node_id in self.provider.removed_nodes:
                 await context.abort(grpc.StatusCode.FAILED_PRECONDITION,
-                                    'Removed session; restart with a new consumer instance')
+                                    'Removed session. Restart with a new consumer instance')
             if node_id is None:
                 old_id = self.provider.consumers.get(host)
                 if old_id is not None and (not request.HasField('assignedId')
