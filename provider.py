@@ -4,6 +4,9 @@ import json
 import threading
 import time
 
+#SERVER_IP = '25.12.136.194'
+SERVER_IP = '127.0.0.1'
+
 PORT = int(sys.argv[1]) if len(sys.argv)>1 else 8000
 
 initial_data = {
@@ -23,7 +26,7 @@ def produce(data, args): # provider.srData => data
 def consume(data, args):
     amount = int(args)
     if data['stock'] < amount:
-        print(f"[SR] consume({amount}) FAILED, stock = {data['stock']}")
+        print(f"[SR] consume({amount}), stock = {data['stock']}, FAILED")
         return b'insufficient'
     data['stock'] -= amount
     data['consumed'] += amount
@@ -40,7 +43,7 @@ provider.add_resource_operation('get_stock', get_stock)
 
 provider.start(PORT)
 
-#threading.Event().wait() # doesnt allow c++
+#threading.Event().wait() # doesnt allow ctrl+c
 try:
     while True:
         time.sleep(3600) # lower cpu usaeg
